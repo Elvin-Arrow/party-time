@@ -1,10 +1,13 @@
-# importing libraries 
-# import cv2 
+# importing libraries
+# import cv2
 # import pygame
-import vlc, time, queue
+from socket import close
+import vlc
+import time
+import queue
 from pynput.keyboard import Key, Listener
 # from ffpyplayer.player import MediaPlayer
-# import numpy as np 
+# import numpy as np
 
 fileName = "./media/Demo.mp4"
 windowName = "Player"
@@ -12,83 +15,89 @@ windowName = "Player"
 player = None
 moviePosition = None
 videoPaused = False
+closeVideo = False
+
 
 def createPlayer(filename):
-  global player
-  player = vlc.MediaPlayer(filename)
+    global player
+    player = vlc.MediaPlayer(filename)
+
 
 def playVideo():
-  global player
+    global player
+    global closeVideo
 
-  status = player.play()
+    status = player.play()
 
-  time.sleep(2)
+    time.sleep(2)
 
-  if status == 0:
-    print('video launched')
-    while player.is_playing:
-      pass
-      
+    if status == 0:
+        while player.is_playing:
+          if closeVideo:
+            break
 
 
 def pauseVideo():
-  global moviePosition
-  global player
-  global videoPaused
+    global moviePosition
+    global player
+    global videoPaused
 
-  player.pause()
+    player.pause()
 
-  if videoPaused:
-    print('Setting player position')
-    player.set_position(moviePosition)
-    
-  else:
-    moviePosition = player.get_position()
+    if videoPaused:
+        print('Setting player position')
+        player.set_position(moviePosition)
+        time.sleep(2)
 
-  videoPaused = not videoPaused
+    else:
+        moviePosition = player.get_position()
+
+    videoPaused = not videoPaused
+
 
 def onPress(key):
-  global player
+    global player
+    global closeVideo
 
-  print(key)
-
-  if key == Key.space:
-    pauseVideo()
-  if key == "'q'":
-    exit()
+    if hasattr(key, 'char'):
+        if key.char == 'q':
+            closeVideo = True
+            exit()
+    elif key == Key.space:
+        pauseVideo()
 
 
 def onRelease(key):
-  pass
+    pass
+
 
 # Setup key listener
 with Listener(on_press=onPress, on_release=onRelease) as listener:
-  print('Listening for events')
-  createPlayer(fileName)
-  playVideo()
-  listener.join()
+    createPlayer(fileName)
+    playVideo()
+    listener.join()
 
 # # creating a vlc instance
 # vlc_instance = vlc.Instance()
-  
+
 # # creating a media player
 # player = vlc_instance.media_player_new()
-  
+
 # # creating a media
 # media = vlc_instance.media_new(fileName)
-  
+
 # # setting media to the player
 # player.set_media(media)
-  
+
 # # play the video
 # player.play()
-  
+
 # wait time
 # time.sleep(6111)
-  
+
 # getting the duration of the video
 # duration = player.get_length()
-  
+
 # printing the duration of the video
 # print("Duration : " + str(duration))
 """ 
