@@ -1,4 +1,4 @@
-import socket
+import socket, time
 from properties import Properties, ClientConnectionProperties
 from threading import Thread
 # Constants
@@ -6,6 +6,7 @@ kConnectionProperties = Properties()
 
 # Globals
 clients = []
+threads = []
 serverSocket = None
 
 #########################################################################################
@@ -62,8 +63,27 @@ def fireUpSocket():
     # Accept connection
     acceptConnections()
 
+####################################### Thread 2 #######################################
+def ping_clients():
+    
+
+    while True:
+        try:
+            # Loop through all the clients and check the active ones
+            for i, client in enumerate(clients):
+                try:
+                    # Ping client
+                    client.clientConnection.send(str.encode('@'))
+                except:
+                    # Delete the inactive client from the list
+                    del clients[i]                    
+                    continue
+        except:
+            break
+        time.sleep(5)
+
 # Serve Connections
-####################################### Thread 2+ #######################################
+####################################### Thread 3+ #######################################
 def serve(conn):
     while True:
         try:
@@ -78,5 +98,9 @@ def serve(conn):
 
 def createThread(conn):
     thread = Thread(target=lambda : serve(conn))
+    threads.append(thread)
     thread.daemon = True
     thread.start()
+
+
+connectionThread = Thread(target=fireUpSocket)
