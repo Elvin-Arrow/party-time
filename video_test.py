@@ -1,15 +1,72 @@
 # importing libraries 
 # import cv2 
 # import pygame
-import vlc, time
+import vlc, time, queue
+from pynput.keyboard import Key, Listener
 # from ffpyplayer.player import MediaPlayer
 # import numpy as np 
 
-fileName = "Demo.mp4"
+fileName = "./media/Demo.mp4"
 windowName = "Player"
 
-media = vlc.MediaPlayer(fileName)
-media.play()
+player = None
+moviePosition = None
+videoPaused = False
+
+def createPlayer(filename):
+  global player
+  player = vlc.MediaPlayer(filename)
+
+def playVideo():
+  global player
+
+  status = player.play()
+
+  time.sleep(2)
+
+  if status == 0:
+    print('video launched')
+    while player.is_playing:
+      pass
+      
+
+
+def pauseVideo():
+  global moviePosition
+  global player
+  global videoPaused
+
+  player.pause()
+
+  if videoPaused:
+    print('Setting player position')
+    player.set_position(moviePosition)
+    
+  else:
+    moviePosition = player.get_position()
+
+  videoPaused = not videoPaused
+
+def onPress(key):
+  global player
+
+  print(key)
+
+  if key == Key.space:
+    pauseVideo()
+  if key == "'q'":
+    exit()
+
+
+def onRelease(key):
+  pass
+
+# Setup key listener
+with Listener(on_press=onPress, on_release=onRelease) as listener:
+  print('Listening for events')
+  createPlayer(fileName)
+  playVideo()
+  listener.join()
 
 # # creating a vlc instance
 # vlc_instance = vlc.Instance()
@@ -27,13 +84,13 @@ media.play()
 # player.play()
   
 # wait time
-time.sleep(6111)
+# time.sleep(6111)
   
 # getting the duration of the video
-duration = player.get_length()
+# duration = player.get_length()
   
 # printing the duration of the video
-print("Duration : " + str(duration))
+# print("Duration : " + str(duration))
 """ 
 # Create a VideoCapture object and read from input file 
 cap = cv2.VideoCapture(fileName) 
