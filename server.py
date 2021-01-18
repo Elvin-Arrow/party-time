@@ -1,4 +1,5 @@
 import socket, time
+import threading
 from properties import Properties, ClientConnectionProperties
 from threading import Thread
 # Constants
@@ -8,6 +9,8 @@ kConnectionProperties = Properties()
 clients = []
 threads = []
 serverSocket = None
+pingingInitiated = False
+closeProgram = False
 
 #########################################################################################
 ####################################### Working Area ####################################
@@ -32,27 +35,39 @@ def  bindSocket():
 def acceptConnections():
     global serverSocket
     global clients
+    global pingingInitiated
+    global closeProgram
 
     print('Accepting connections...')
 
     try:    
-        clientConnection, clientAddress = serverSocket.accept()
+        while not closeProgram:
+            clientConnection, clientAddress = serverSocket.accept()
 
-        # Store the new connection
-        client = ClientConnectionProperties(clientConnection=clientConnection, clientAddress=clientAddress)
-        clients.append(client)
+            # Store the new connection
+            client = ClientConnectionProperties(clientConnection=clientConnection, clientAddress=clientAddress)
+            clients.append(client)
 
-        # Display the address of the newly connected client
-        print("{} just connected".format(client.clientAddress[0]))
+            # Display the address of the newly connected client
+            print("{} just connected".format(client.clientAddress[0]))
 
-        # Serve connection
-        createThread(client.clientConnection)
+            # Serve connection
+            createConnectionThread(client.clientConnection)
+
+            if not pingingInitiated:
+                thread = Thread(target=pingClients())
+                threads.append(thread)
+                thread.daemon = True
+                thread.start()
+                pingingInitiated = True
 
     except:
         print('Error')
 
 def fireUpSocket():
     global serverSocket
+
+    print('Firing up the server')
 
     # Create socket
     createSocket()
@@ -64,7 +79,7 @@ def fireUpSocket():
     acceptConnections()
 
 ####################################### Thread 2 #######################################
-def ping_clients():
+def pingClients():
     
 
     while True:
@@ -80,27 +95,80 @@ def ping_clients():
                     continue
         except:
             break
-        time.sleep(5)
+
+        # 30 second interval between pings
+        time.sleep(30)
 
 # Serve Connections
 ####################################### Thread 3+ #######################################
 def serve(conn):
+    # Get client ID
+    clientId = requestID(conn)
+
+    # Let everyone know who joined
+    pingAll(clientId)
+    
+    # Check if the client is ready to start the party
+    isClientReady()
+    
     while True:
         try:
+            # Listen to the client
             data = conn.recv(1024)
             print(data.decode())
 
-            response = 'Hey just received a message from you saying: {}'.format(data.decode())
+            # TODO Check for play / pause
 
-            conn.sendall(response.encode())
         except:
-            print('Connection closed by client')
+                print('Connection closed by client')
 
-def createThread(conn):
-    thread = Thread(target=lambda : serve(conn))
+def requestID(conn):
+    message = 'Key in your identifier'
+
+    conn.sendall(message.encode())
+
+    id = conn.recv(1024)
+    
+    return id.decode()
+
+def pingAll(clientId):
+    global clients
+
+    message = f'Hey... {clientId} just joined the party!'
+
+    # Ping all clients
+    for client in clients:
+        client.clientConnection.sendall(message.encode())
+
+def isClientReady(conn):
+    
+    while True:
+        message = 'Are you ready for the party?'
+
+        conn.sendall(message.encode())
+
+        isReady = conn.recv(1024)
+
+        if isReady.decode():
+            break
+
+
+
+def createConnectionThread(conn):
+    thread = Thread(target=serve, args=(conn))
     threads.append(thread)
     thread.daemon = True
     thread.start()
+    
 
 
 connectionThread = Thread(target=fireUpSocket)
+threads.append(connectionThread)
+
+# Start accepting connections
+connectionThread.start()
+
+# Wait for all threads to complete
+for thread in threads:
+    thread.join()
+    
