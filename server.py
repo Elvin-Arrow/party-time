@@ -1,5 +1,4 @@
 import socket, time
-import threading
 from properties import Properties, ClientConnectionProperties
 from threading import Thread
 # Constants
@@ -134,10 +133,12 @@ def requestID(conn):
 def pingAll(clientId):
     global clients
 
+    messageType = 'message'
     message = f'Hey... {clientId} just joined the party!'
 
     # Ping all clients
     for client in clients:
+        client.clientConnection.sendall(messageType.encode())
         client.clientConnection.sendall(message.encode())
 
 def isClientReady(conn):
@@ -155,7 +156,7 @@ def isClientReady(conn):
 
 
 def createConnectionThread(conn):
-    thread = Thread(target=serve, args=(conn))
+    thread = Thread(target=serve, args=(conn,))
     threads.append(thread)
     thread.daemon = True
     thread.start()

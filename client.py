@@ -13,14 +13,25 @@ try:
 
     flag = True
     while flag:
-        data = input('What to send?\n')
-        clientSocket.sendall(data.encode())
+        # data = input('What to send?\n')
+        # clientSocket.sendall(data.encode())
+        
+        serverMessage = clientSocket.recv(1024)
 
-        response = clientSocket.recv(1024)
+        serverMessage = serverMessage.decode()
 
-        print('Server just returned: {}'.format(response.decode()))
+        if serverMessage == '@':
+            continue
 
-        flag = False if input('Close connection?\n') == 'y' else ''
+        if serverMessage == 'messaged':
+            message = clientSocket.recv(1024)
+            print(message.decode())
+        else:
+        # print(serverMessage.decode())
+            input(f'{serverMessage}\n')
+
+
+        # flag = False if input('Close connection?\n') == 'y' else True
 
     clientSocket.close()
 except:
